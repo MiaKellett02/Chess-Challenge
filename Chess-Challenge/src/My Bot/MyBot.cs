@@ -2,6 +2,7 @@
 using System;
 using System.Numerics;
 using System.Collections.Generic;
+using ChessChallenge.Application;
 
 public class MyBot : IChessBot {
 	private Board m_board;
@@ -29,6 +30,7 @@ public class MyBot : IChessBot {
 			}
 		}
 
+		ConsoleHelper.Log("HighestValue: " + highestValue.ToString());
 		return bestMove;
 	}
 
