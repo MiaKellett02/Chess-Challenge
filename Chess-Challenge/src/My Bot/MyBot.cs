@@ -2,8 +2,7 @@
 using System;
 using System.Numerics;
 using System.Collections.Generic;
-using ChessChallenge.Application;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Linq;
 
 public class MyBot : IChessBot {
 	//Consts.
@@ -11,7 +10,7 @@ public class MyBot : IChessBot {
 
 	//Variables.
 	private Board m_board;
-	private bool isMyBotWhite;
+	private int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };// Piece values: null, pawn, knight, bishop, rook, queen, king
 
 	//Debug variables.
 	private int highestValueLastTime;
@@ -22,9 +21,6 @@ public class MyBot : IChessBot {
 
 		//Get all the legal moves.
 		Move[] moves = m_board.GetLegalMoves();
-
-		//Get the colour of MyBot.
-		isMyBotWhite = m_board.IsWhiteToMove;
 
 		//Evalulate each move and choose best one.
 		int highestValue = int.MinValue;
@@ -41,7 +37,7 @@ public class MyBot : IChessBot {
 		//DEBUG
 		if (highestValueLastTime != highestValue) {
 			highestValueLastTime = highestValue;
-			ConsoleHelper.Log("HighestValue: " + highestValue.ToString());
+			ChessChallenge.Application.ConsoleHelper.Log("HighestValue: " + highestValue.ToString());
 		}
 
 		//Return the move to make.
@@ -53,30 +49,47 @@ public class MyBot : IChessBot {
 		//Initalise return value.
 		int boardValueAfterMove = 0;
 
+		// add capture piece value to return value.
+		Piece capturedPiece = m_board.GetPiece(a_move.TargetSquare);
+		int capturedPieceValue = pieceValues[(int)capturedPiece.PieceType];
+		boardValueAfterMove += capturedPieceValue;
+
 		//Get the current turn's colour.
 		bool currentTurnIsWhite = m_board.IsWhiteToMove;
 
 		//Make move then get the score of the state of the board afterwards.
 		m_board.MakeMove(a_move);
 
-		//Get the next turns colour.
-		bool nextTurnIsWhite = m_board.IsWhiteToMove;
-
-		int CHECKMATE_VALUE = 1000000;
+		int CHECKMATE_VALUE = 1000000000;
 		if (m_board.IsInCheckmate()) {
 			//Always do checkmate.
 			m_board.UndoMove(a_move);
 			return CHECKMATE_VALUE;
 		}
 
-		int CHECK_VALUE = 100;
+		int CHECK_VALUE = 100000;
 		if (m_board.IsInCheck()) {
 			boardValueAfterMove += CHECK_VALUE;
 		}
 
-		int STALEMATE_VALUE = -100;
-		if (m_board.IsInStalemate()) {
-			boardValueAfterMove -= STALEMATE_VALUE;
+		int DRAW_VALUE = -100000;
+		if(m_board.IsDraw()) { //Stalemate, draw, repetition, insuffcient material etc...
+			boardValueAfterMove -= DRAW_VALUE;
+		}
+
+		int CASTLES_VALUE = 1000;
+		if (a_move.IsCastles) {
+			boardValueAfterMove += CASTLES_VALUE;
+		}
+
+		int ENPASSANT_VALUE = 1000;
+		if (a_move.IsEnPassant) {
+			boardValueAfterMove += ENPASSANT_VALUE;
+		}
+
+		int CAPTURE_VALUE = 500;
+		if (a_move.IsCapture) {
+			boardValueAfterMove += CAPTURE_VALUE;
 		}
 
 		int BLACK_MULTIPLIER;
@@ -93,13 +106,15 @@ public class MyBot : IChessBot {
 			WHITE_MULTIPLIER = -1;
 		}
 
+		//Get the value of the whole board.
 		PieceList[] allPieces = m_board.GetAllPieceLists();
 		foreach (PieceList pieces in allPieces) {
 			bool isWhitePieceList = pieces.IsWhitePieceList;
+			int piecesValuePlusCount = pieces.Count * pieceValues[(int)pieces.TypeOfPieceInList];
 			if (isWhitePieceList) {
-				boardValueAfterMove += (WHITE_MULTIPLIER * pieces.Count);
+				boardValueAfterMove += (WHITE_MULTIPLIER * piecesValuePlusCount);
 			} else {
-				boardValueAfterMove += (BLACK_MULTIPLIER * pieces.Count);
+				boardValueAfterMove += (BLACK_MULTIPLIER * piecesValuePlusCount);
 			}
 		}
 
@@ -117,8 +132,8 @@ public class MyBot : IChessBot {
 				}
 			}
 
-			//Set the main score to the total as we want to ignore the current state of the board and only think of the best state further on in the board.
-			boardValueAfterMove = highestScore;
+			//add the score to the moves score.
+			boardValueAfterMove += highestScore;
 		}
 
 		//Return board to original state.
