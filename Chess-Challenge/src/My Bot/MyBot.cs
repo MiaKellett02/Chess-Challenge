@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 public class MyBot : IChessBot {
 	//Consts.
-	private const int EVALUATION_RECURSIVE_DEPTH = 2;
+	private const int EVALUATION_RECURSIVE_DEPTH = 3;//Keep this as an odd number so it always ends on MyBots move.
 
 	//Variables.
 	private Board m_board;
