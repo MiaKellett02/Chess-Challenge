@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 public class MyBot : IChessBot {
 	//Consts.
-	private const int EVALUATION_RECURSIVE_DEPTH = 5;
+	private const int EVALUATION_RECURSIVE_DEPTH = 2;
 
 	//Variables.
 	private Board m_board;
