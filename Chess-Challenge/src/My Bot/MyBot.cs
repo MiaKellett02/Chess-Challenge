@@ -96,31 +96,31 @@ public class MyBot : IChessBot {
 			boardValueAfterMove += CAPTURE_VALUE;
 		}
 
-		//int BLACK_MULTIPLIER;
-		//int WHITE_MULTIPLIER;
-		//if (currentTurnIsWhite) {
-		//	//Count white pieces vs black pieces.
-		//	//White pieces give positive value and black pieces give negative value.
-		//	BLACK_MULTIPLIER = -1;
-		//	WHITE_MULTIPLIER = 1;
-		//} else {
-		//	//Count white pieces vs black pieces.
-		//	//White pieces give negative value and black pieces give positive value.
-		//	BLACK_MULTIPLIER = 1;
-		//	WHITE_MULTIPLIER = -1;
-		//}
+		int BLACK_MULTIPLIER;
+		int WHITE_MULTIPLIER;
+		if (currentTurnIsWhite) {
+			//Count white pieces vs black pieces.
+			//White pieces give positive value and black pieces give negative value.
+			BLACK_MULTIPLIER = -1;
+			WHITE_MULTIPLIER = 1;
+		} else {
+			//Count white pieces vs black pieces.
+			//White pieces give negative value and black pieces give positive value.
+			BLACK_MULTIPLIER = 1;
+			WHITE_MULTIPLIER = -1;
+		}
 
-		////Get the value of the whole board.
-		//PieceList[] allPieces = m_board.GetAllPieceLists();
-		//foreach (PieceList pieces in allPieces) {
-		//	bool isWhitePieceList = pieces.IsWhitePieceList;
-		//	int piecesValuePlusCount = pieces.Count * pieceValues[(int)pieces.TypeOfPieceInList];
-		//	if (isWhitePieceList) {
-		//		boardValueAfterMove += (WHITE_MULTIPLIER * piecesValuePlusCount);
-		//	} else {
-		//		boardValueAfterMove += (BLACK_MULTIPLIER * piecesValuePlusCount);
-		//	}
-		//}
+		//Get the value of the whole board.
+		PieceList[] allPieces = m_board.GetAllPieceLists();
+		foreach (PieceList pieces in allPieces) {
+			bool isWhitePieceList = pieces.IsWhitePieceList;
+			int piecesValuePlusCount = pieces.Count * pieceValues[(int)pieces.TypeOfPieceInList];
+			if (isWhitePieceList) {
+				boardValueAfterMove += (WHITE_MULTIPLIER * piecesValuePlusCount);
+			} else {
+				boardValueAfterMove += (BLACK_MULTIPLIER * piecesValuePlusCount);
+			}
+		}
 
 		if (currentDepth > 0) {
 			//Get list of next posisble moves.
