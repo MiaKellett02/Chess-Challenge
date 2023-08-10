@@ -12,7 +12,6 @@ public class MyBot : IChessBot {
 	private Board m_board;
 	private int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };// Piece values: null, pawn, knight, bishop, rook, queen, king
 
-
 	//Debug variables.
 	private int highestValueLastTime;
 
@@ -78,12 +77,9 @@ public class MyBot : IChessBot {
 			boardValueAfterMove -= DRAW_VALUE;
 		}
 
-		int MOVING_KING_VALUE = -10000;
 		int CASTLES_VALUE = 1000;
 		if (a_move.IsCastles) {
 			boardValueAfterMove += CASTLES_VALUE;
-		}else if (a_move.StartSquare == m_board.GetKingSquare(currentTurnIsWhite)) {
-			boardValueAfterMove += MOVING_KING_VALUE;
 		}
 
 		int ENPASSANT_VALUE = 1000;
