@@ -133,7 +133,7 @@ public class MyBot : IChessBot {
 			}
 
 			//add the score to the moves score.
-			boardValueAfterMove += highestScore;
+			boardValueAfterMove = highestScore;
 		}
 
 		//Return board to original state.
