@@ -8,6 +8,9 @@ public class MyBot : IChessBot {
 	private Board m_board;
 	private bool isWhite;
 
+	//Debug variables.
+	private int highestValueLastTime;
+
 	public Move Think(Board board, Timer timer) {
 		//Cache the state of the board.
 		m_board = board;
@@ -30,7 +33,13 @@ public class MyBot : IChessBot {
 			}
 		}
 
-		ConsoleHelper.Log("HighestValue: " + highestValue.ToString());
+		//DEBUG
+		if (highestValueLastTime != highestValue) {
+			highestValueLastTime = highestValue;
+			ConsoleHelper.Log("HighestValue: " + highestValue.ToString());
+		}
+
+		//Return the move to make.
 		return bestMove;
 	}
 
