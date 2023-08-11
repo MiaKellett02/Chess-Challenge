@@ -26,8 +26,9 @@ public class MyBot : IChessBot {
 		Move[] moves = m_board.GetLegalMoves();
 
 		//Evalulate each move and choose best one.
-		int highestValue = int.MinValue;
-		Move bestMove = moves[0];
+		Random rng = new();
+		Move bestMove = moves[rng.Next(moves.Length)];
+		int highestValue = Evaluate(bestMove, EVALUATION_RECURSIVE_DEPTH);
 		foreach (Move move in moves) {
 			//Evaluate the move.
 			int value = Evaluate(move, EVALUATION_RECURSIVE_DEPTH);
@@ -107,7 +108,7 @@ public class MyBot : IChessBot {
 		//Get the value of the whole board if the move is made.
 		int valueOfBoardIfMoveIsMade = GetValueOfBoard(m_board);
 		int netMoveScore = (valueOfBoardIfMoveIsMade - boardValueBeforeMove);
-		if(netMoveScore <= 0) {
+		if (netMoveScore <= 0) {
 			int NO_ENEMY_CAPTURE_VALUE = -1000;
 			moveEvaluationScore += NO_ENEMY_CAPTURE_VALUE;
 		} else {
