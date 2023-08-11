@@ -54,6 +54,17 @@ public class MyBot : IChessBot {
 
 		//Get the current turn's colour.
 		bool currentTurnIsWhite = m_board.IsWhiteToMove;
+		if (currentTurnIsWhite) {
+			//Count white pieces vs black pieces.
+			//White pieces give positive value and black pieces give negative value.
+			BLACK_MULTIPLIER = -1;
+			WHITE_MULTIPLIER = 1;
+		} else {
+			//Count white pieces vs black pieces.
+			//White pieces give negative value and black pieces give positive value.
+			BLACK_MULTIPLIER = 1;
+			WHITE_MULTIPLIER = -1;
+		}
 
 		//Get the original board value.
 		int boardValueBeforeMove = GetValueOfBoard(m_board);
@@ -93,24 +104,10 @@ public class MyBot : IChessBot {
 			moveEvaluationScore += CAPTURE_VALUE;
 		}
 
-		if (currentTurnIsWhite) {
-			//Count white pieces vs black pieces.
-			//White pieces give positive value and black pieces give negative value.
-			BLACK_MULTIPLIER = -1;
-			WHITE_MULTIPLIER = 1;
-		} else {
-			//Count white pieces vs black pieces.
-			//White pieces give negative value and black pieces give positive value.
-			BLACK_MULTIPLIER = 1;
-			WHITE_MULTIPLIER = -1;
-		}
-
-		//Get the value of the whole board.
-
-
-		//Check the value of the board 
-
-
+		//Get the value of the whole board if the move is made.
+		int valueOfBoardIfMoveIsMade = GetValueOfBoard(m_board);
+		int howGoodWasMove = valueOfBoardIfMoveIsMade - boardValueBeforeMove; //By taking away the original from the new value we can see if the move was a net positive.
+		moveEvaluationScore += howGoodWasMove;
 
 		if (currentDepth > 0) {
 			//Get list of next posisble moves.
