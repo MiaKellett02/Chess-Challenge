@@ -108,13 +108,13 @@ public class MyBot : IChessBot {
 		}
 
 		//Weights of move based on piece type.
-		int NO_ENEMY_CAPTURE_VALUE = -3000;
+		int NO_ENEMY_CAPTURE_VALUE = -1000000;
 		int KING_MOVE_SCORE_WEIGHT = -1000;
 		int QUEEN_MOVE_SCORE_WEIGHT = 100;
 		int ROOK_MOVE_SCORE_WEIGHT = 200;
 		int BISHOP_MOVE_SCORE_WEIGHT = 200;
 		int KNIGHT_MOVE_SCORE_WEIGHT = 100;
-		int PAWN_MOVE_SCORE_WEIGHT = 500;
+		int PAWN_MOVE_SCORE_WEIGHT = 1000;
 
 		//Get the value of the whole board if the move is made.
 		int valueOfBoardIfMoveIsMade = GetValueOfBoard(m_board);
