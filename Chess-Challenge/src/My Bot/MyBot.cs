@@ -49,6 +49,7 @@ public class MyBot : IChessBot {
 	}
 
 	public int Evaluate(Move a_move, int a_deepness) {
+		PieceType movePieceType = a_move.MovePieceType;
 		int currentDepth = a_deepness - 1;
 		//Initalise return value.
 		int moveEvaluationScore = 0;
@@ -73,6 +74,7 @@ public class MyBot : IChessBot {
 		//Make move then get the score of the state of the board afterwards.
 		m_board.MakeMove(a_move);
 
+		//Check the board for different main game states.
 		int CHECKMATE_VALUE = 1000000000;
 		if (m_board.IsInCheckmate()) {
 			//Always do checkmate.
@@ -105,12 +107,53 @@ public class MyBot : IChessBot {
 			moveEvaluationScore += CAPTURE_VALUE;
 		}
 
+		//Weights of move based on piece type.
+		int NO_ENEMY_CAPTURE_VALUE = -3000;
+		int KING_MOVE_SCORE_WEIGHT = -1000;
+		int QUEEN_MOVE_SCORE_WEIGHT = 100;
+		int ROOK_MOVE_SCORE_WEIGHT = 200;
+		int BISHOP_MOVE_SCORE_WEIGHT = 200;
+		int KNIGHT_MOVE_SCORE_WEIGHT = 100;
+		int PAWN_MOVE_SCORE_WEIGHT = 500;
+
 		//Get the value of the whole board if the move is made.
 		int valueOfBoardIfMoveIsMade = GetValueOfBoard(m_board);
 		int netMoveScore = (valueOfBoardIfMoveIsMade - boardValueBeforeMove);
 		if (netMoveScore <= 0) {
-			int NO_ENEMY_CAPTURE_VALUE = -1000;
-			moveEvaluationScore += NO_ENEMY_CAPTURE_VALUE;
+			//If move does not capture a piece.
+			moveEvaluationScore += NO_ENEMY_CAPTURE_VALUE; //Discourage bot from not capturing.
+
+			//Then give it more incentive to move certain pieces in that case.
+			switch (movePieceType) {
+				case PieceType.King: {
+					moveEvaluationScore += KING_MOVE_SCORE_WEIGHT;
+					break;
+				}
+				case PieceType.Queen: {
+					moveEvaluationScore += QUEEN_MOVE_SCORE_WEIGHT;
+					break;
+				}
+				case PieceType.Rook: {
+					moveEvaluationScore += ROOK_MOVE_SCORE_WEIGHT;
+					break;
+				}
+				case PieceType.Bishop: {
+					moveEvaluationScore += BISHOP_MOVE_SCORE_WEIGHT;
+					break;
+				}
+				case PieceType.Knight: {
+					moveEvaluationScore += KNIGHT_MOVE_SCORE_WEIGHT;
+					break;
+				}
+				case PieceType.Pawn: {
+					moveEvaluationScore += PAWN_MOVE_SCORE_WEIGHT;
+					break;
+				}
+				default: {
+					break;
+				}
+
+			}
 		} else {
 			int ENEMY_CAPTURED_VALUE = 1000;
 			moveEvaluationScore += ENEMY_CAPTURED_VALUE;
@@ -133,6 +176,7 @@ public class MyBot : IChessBot {
 			//add the score to the moves score.
 			moveEvaluationScore += worstScoreForPreviousPlayer;
 		}
+
 
 		//Return board to original state.
 		m_board.UndoMove(a_move);
