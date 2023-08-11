@@ -106,8 +106,14 @@ public class MyBot : IChessBot {
 
 		//Get the value of the whole board if the move is made.
 		int valueOfBoardIfMoveIsMade = GetValueOfBoard(m_board);
-		int howGoodWasMove = valueOfBoardIfMoveIsMade - boardValueBeforeMove; //By taking away the original from the new value we can see if the move was a net positive.
-		moveEvaluationScore += howGoodWasMove;
+		int netMoveScore = (valueOfBoardIfMoveIsMade - boardValueBeforeMove);
+		if(netMoveScore <= 0) {
+			int NO_ENEMY_CAPTURE_VALUE = -1000;
+			moveEvaluationScore += NO_ENEMY_CAPTURE_VALUE;
+		} else {
+			int ENEMY_CAPTURED_VALUE = 1000;
+			moveEvaluationScore += ENEMY_CAPTURED_VALUE;
+		}
 
 		if (currentDepth > 0) {
 			//Get list of next posisble moves.
@@ -124,7 +130,7 @@ public class MyBot : IChessBot {
 			}
 
 			//add the score to the moves score.
-			moveEvaluationScore = highestScore;
+			moveEvaluationScore += highestScore;
 		}
 
 		//Return board to original state.
