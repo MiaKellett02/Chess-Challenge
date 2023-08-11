@@ -122,16 +122,16 @@ public class MyBot : IChessBot {
 
 			//Evaluate each of those moves with 1 less depth than the previous call of evaluate.
 			//When it reaches 0 then the recursive loop will exit with the best approximate move.
-			int highestScore = int.MinValue;
+			int worstScoreForPreviousPlayer = int.MaxValue;
 			foreach (Move move in nextMoves) {
 				int moveScore = -Evaluate(move, currentDepth); //Inverts the evaluation score as what's best for the next player won't be best for the current player.
-				if (moveScore > highestScore) {
-					highestScore = moveScore;
+				if (moveScore < worstScoreForPreviousPlayer) {
+					worstScoreForPreviousPlayer = moveScore;
 				}
 			}
 
 			//add the score to the moves score.
-			moveEvaluationScore += highestScore;
+			moveEvaluationScore += worstScoreForPreviousPlayer;
 		}
 
 		//Return board to original state.
