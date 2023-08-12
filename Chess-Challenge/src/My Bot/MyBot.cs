@@ -6,13 +6,13 @@ using System.Linq;
 
 public class MyBot : IChessBot {
 	//Consts.
-	private const int EVALUATION_RECURSIVE_DEPTH = 3;//This is how many moves ahead the bot will think about.
+	private const int EVALUATION_RECURSIVE_DEPTH = 4;//This is how many moves ahead the bot will think about.
 	//The consts after this line are values of a move based on the state of the board after that move 
 	private const int NO_ENEMY_CAPTURE_VALUE = -1000000; //When a move doesn't capture anything it is given this weight.
 	private const int ENEMY_CAPTURED_VALUE = 1000000;
 	private const int CHECKMATE_VALUE = 1000000000;
-	private const int CHECK_VALUE = 1000000;
-	private const int DRAW_VALUE = -500000;
+	private const int CHECK_VALUE = 100000;
+	private const int DRAW_VALUE = -1000000;
 	//The consts after this line are values of a move based on if the move is a special move type.
 	private const int CASTLES_VALUE = 1000;
 	private const int ENPASSANT_VALUE = 1000;
