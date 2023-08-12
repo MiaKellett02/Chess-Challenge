@@ -6,7 +6,7 @@ using System.Linq;
 
 public class MyBot : IChessBot {
 	//Consts.
-	private const int EVALUATION_RECURSIVE_DEPTH = 3;//This is how many moves ahead the bot will think about.
+	private const int EVALUATION_RECURSIVE_DEPTH = 5;//This is how many moves ahead the bot will think about.
 	//The consts after this line are values of a move based on the state of the board after that move 
 	private const int NO_ENEMY_CAPTURE_VALUE = -1000000; //When a move doesn't capture anything it is given this weight.
 	private const int ENEMY_CAPTURED_VALUE = 1000;
@@ -100,11 +100,13 @@ public class MyBot : IChessBot {
 		}
 
 		if (m_board.IsInCheck()) {
+			m_board.UndoMove(a_move);
 			moveEvaluationScore += CHECK_VALUE;
 			return moveEvaluationScore;
 		}
 
 		if (m_board.IsDraw()) { //Stalemate, draw, repetition, insuffcient material etc...
+			m_board.UndoMove(a_move);
 			moveEvaluationScore += DRAW_VALUE;
 			return moveEvaluationScore;
 		}
@@ -160,6 +162,7 @@ public class MyBot : IChessBot {
 
 			}
 		} else {
+			m_board.UndoMove(a_move);
 			moveEvaluationScore += ENEMY_CAPTURED_VALUE;
 			return moveEvaluationScore;
 		}
