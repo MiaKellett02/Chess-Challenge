@@ -101,10 +101,12 @@ public class MyBot : IChessBot {
 
 		if (m_board.IsInCheck()) {
 			moveEvaluationScore += CHECK_VALUE;
+			return moveEvaluationScore;
 		}
 
 		if (m_board.IsDraw()) { //Stalemate, draw, repetition, insuffcient material etc...
 			moveEvaluationScore += DRAW_VALUE;
+			return moveEvaluationScore;
 		}
 
 		if (a_move.IsCastles) {
@@ -159,6 +161,7 @@ public class MyBot : IChessBot {
 			}
 		} else {
 			moveEvaluationScore += ENEMY_CAPTURED_VALUE;
+			return moveEvaluationScore;
 		}
 
 		if (currentDepth > 0) {
