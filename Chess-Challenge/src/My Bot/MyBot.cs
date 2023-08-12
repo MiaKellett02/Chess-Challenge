@@ -6,7 +6,25 @@ using System.Linq;
 
 public class MyBot : IChessBot {
 	//Consts.
-	private const int EVALUATION_RECURSIVE_DEPTH = 3;//Keep this as an odd number so it always ends on MyBots move.
+	private const int EVALUATION_RECURSIVE_DEPTH = 3;//This is how many moves ahead the bot will think about.
+	//The consts after this line are values of a move based on the state of the board after that move 
+	private const int NO_ENEMY_CAPTURE_VALUE = -1000000; //When a move doesn't capture anything it is given this weight.
+	private const int ENEMY_CAPTURED_VALUE = 1000;
+	private const int CHECKMATE_VALUE = 1000000000;
+	private const int CHECK_VALUE = 100000;
+	private const int DRAW_VALUE = -100000;
+	//The consts after this line are values of a move based on if the move is a special move type.
+	private const int CASTLES_VALUE = 1000;
+	private const int ENPASSANT_VALUE = 1000;
+	private const int CAPTURE_VALUE = 500;
+	//The consts after this line are the weights added to each move when it doesn't
+	//lead to a capture depending on the piece being moved.
+	private const int KING_MOVE_SCORE_WEIGHT = -1000;
+	private const int QUEEN_MOVE_SCORE_WEIGHT = 100;
+	private const int ROOK_MOVE_SCORE_WEIGHT = 200;
+	private const int BISHOP_MOVE_SCORE_WEIGHT = 200;
+	private const int KNIGHT_MOVE_SCORE_WEIGHT = 100;
+	private const int PAWN_MOVE_SCORE_WEIGHT = 1000;
 
 	//Variables.
 	private Board m_board;
@@ -75,46 +93,31 @@ public class MyBot : IChessBot {
 		m_board.MakeMove(a_move);
 
 		//Check the board for different main game states.
-		int CHECKMATE_VALUE = 1000000000;
 		if (m_board.IsInCheckmate()) {
 			//Always do checkmate.
 			m_board.UndoMove(a_move);
 			return CHECKMATE_VALUE;
 		}
 
-		int CHECK_VALUE = 100000;
 		if (m_board.IsInCheck()) {
 			moveEvaluationScore += CHECK_VALUE;
 		}
 
-		int DRAW_VALUE = -100000;
 		if (m_board.IsDraw()) { //Stalemate, draw, repetition, insuffcient material etc...
-			moveEvaluationScore -= DRAW_VALUE;
+			moveEvaluationScore += DRAW_VALUE;
 		}
 
-		int CASTLES_VALUE = 1000;
 		if (a_move.IsCastles) {
 			moveEvaluationScore += CASTLES_VALUE;
 		}
 
-		int ENPASSANT_VALUE = 1000;
 		if (a_move.IsEnPassant) {
 			moveEvaluationScore += ENPASSANT_VALUE;
 		}
 
-		int CAPTURE_VALUE = 500;
 		if (a_move.IsCapture) {
 			moveEvaluationScore += CAPTURE_VALUE;
 		}
-
-		//Weights of move based on piece type.
-		int NO_ENEMY_CAPTURE_VALUE = -1000000;
-		int KING_MOVE_SCORE_WEIGHT = -1000;
-		int QUEEN_MOVE_SCORE_WEIGHT = 100;
-		int ROOK_MOVE_SCORE_WEIGHT = 200;
-		int BISHOP_MOVE_SCORE_WEIGHT = 200;
-		int KNIGHT_MOVE_SCORE_WEIGHT = 100;
-		int PAWN_MOVE_SCORE_WEIGHT = 1000;
 
 		//Get the value of the whole board if the move is made.
 		int valueOfBoardIfMoveIsMade = GetValueOfBoard(m_board);
@@ -155,7 +158,6 @@ public class MyBot : IChessBot {
 
 			}
 		} else {
-			int ENEMY_CAPTURED_VALUE = 1000;
 			moveEvaluationScore += ENEMY_CAPTURED_VALUE;
 		}
 
