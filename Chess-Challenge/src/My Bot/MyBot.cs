@@ -6,12 +6,12 @@ using System.Linq;
 
 public class MyBot : IChessBot {
 	//Consts.
-	private const int EVALUATION_RECURSIVE_DEPTH = 3;//This is how many moves ahead the bot will think about.
-	//The consts after this line are values of a move based on the state of the board after that move 
+	private const int EVALUATION_RECURSIVE_DEPTH = 5;//This is how many moves ahead the bot will think about.
+													 //The consts after this line are values of a move based on the state of the board after that move 
 	private const int NO_ENEMY_CAPTURE_VALUE = -1000000; //When a move doesn't capture anything it is given this weight.
 	private const int ENEMY_CAPTURED_VALUE = 1000;
 	private const int CHECKMATE_VALUE = 1000000000;
-	private const int CHECK_VALUE = 100000;
+	private const int CHECK_VALUE = -50000;
 	private const int DRAW_VALUE = -100000;
 	//The consts after this line are values of a move based on if the move is a special move type.
 	private const int CASTLES_VALUE = 1000;
@@ -48,7 +48,12 @@ public class MyBot : IChessBot {
 		Move bestMove = moves[rng.Next(moves.Length)];
 		int highestValue = Evaluate(bestMove, EVALUATION_RECURSIVE_DEPTH);
 		foreach (Move move in moves) {
-			//Evaluate the move.
+			//First test if the move is checkmate.
+			if (MoveIsCheckmate(m_board, move)) {
+				return move;
+			}
+
+			//If not checkmate evaluate the move.
 			int value = Evaluate(move, EVALUATION_RECURSIVE_DEPTH);
 			if (value > highestValue) {
 				bestMove = move;
@@ -105,8 +110,7 @@ public class MyBot : IChessBot {
 
 		if (m_board.IsDraw()) { //Stalemate, draw, repetition, insuffcient material etc...
 			m_board.UndoMove(a_move);
-			moveEvaluationScore += DRAW_VALUE;
-			return moveEvaluationScore;
+			return DRAW_VALUE;
 		}
 
 		if (a_move.IsCastles) {
@@ -152,6 +156,8 @@ public class MyBot : IChessBot {
 				}
 				case PieceType.Pawn: {
 					moveEvaluationScore += PAWN_MOVE_SCORE_WEIGHT;
+					m_board.UndoMove(a_move);
+					return moveEvaluationScore;
 					break;
 				}
 				default: {
@@ -161,6 +167,8 @@ public class MyBot : IChessBot {
 			}
 		} else {
 			moveEvaluationScore += ENEMY_CAPTURED_VALUE;
+			m_board.UndoMove(a_move);
+			return moveEvaluationScore;
 		}
 
 		if (currentDepth > 0) {
@@ -202,5 +210,13 @@ public class MyBot : IChessBot {
 			}
 		}
 		return boardValue;
+	}
+
+	// Test if this move gives checkmate
+	bool MoveIsCheckmate(Board board, Move move) {
+		board.MakeMove(move);
+		bool isMate = board.IsInCheckmate();
+		board.UndoMove(move);
+		return isMate;
 	}
 }
