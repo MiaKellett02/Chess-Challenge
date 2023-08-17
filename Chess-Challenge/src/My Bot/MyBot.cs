@@ -6,35 +6,31 @@ using System.Linq;
 
 public class MyBot : IChessBot {
 	//Consts.
-	private const int EVALUATION_RECURSIVE_DEPTH = 3;//This is how many moves ahead the bot will think about.
-													 //The consts after this line are values of a move based on the state of the board after that move 
-	private const int NO_ENEMY_CAPTURE_VALUE = -1000000; //When a move doesn't capture anything it is given this weight.
-	private const int ENEMY_CAPTURED_VALUE = 10000;
-	private const int CHECKMATE_VALUE = 1000000000;
-	private const int CHECK_VALUE = 100000;
-	private const int DRAW_VALUE = -100000;
-	//The consts after this line are values of a move based on if the move is a special move type.
-	private const int CASTLES_VALUE = 1000;
-	private const int ENPASSANT_VALUE = 1000;
-	private const int CAPTURE_VALUE = 500;
+	const int EVALUATION_RECURSIVE_DEPTH = 3;//This is how many moves ahead the bot will think about.
+											 //The consts after this line are values of a move based on the state of the board after that move 
+	const int NO_ENEMY_CAPTURE_VALUE = -1000000; //When a move doesn't capture anything it is given this weight.
+	const int ENEMY_CAPTURED_VALUE = 10000;
+	const int CHECKMATE_VALUE = 1000000000;
+	const int CHECK_VALUE = 100000;
+	const int DRAW_VALUE = -100000;
 	//The consts after this line are the weights added to each move when it doesn't
 	//lead to a capture depending on the piece being moved.
-	private const int KING_MOVE_SCORE_WEIGHT = -1000;
-	private const int QUEEN_MOVE_SCORE_WEIGHT = 100;
-	private const int ROOK_MOVE_SCORE_WEIGHT = 200;
-	private const int BISHOP_MOVE_SCORE_WEIGHT = 200;
-	private const int KNIGHT_MOVE_SCORE_WEIGHT = 100;
-	private const int PAWN_MOVE_SCORE_WEIGHT = 1000;
+	const int KING_MOVE_SCORE_WEIGHT = -1000;
+	const int QUEEN_MOVE_SCORE_WEIGHT = 100;
+	const int ROOK_MOVE_SCORE_WEIGHT = 200;
+	const int BISHOP_MOVE_SCORE_WEIGHT = 200;
+	const int KNIGHT_MOVE_SCORE_WEIGHT = 100;
+	const int PAWN_MOVE_SCORE_WEIGHT = 1000;
 
 	//Variables.
-	private Board m_board;
-	private int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };// Piece values: null, pawn, knight, bishop, rook, queen, king
-	private int BLACK_MULTIPLIER;
-	private int WHITE_MULTIPLIER;
-	private bool myBotIsWhite;
+	Board m_board;
+	int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };// Piece values: null, pawn, knight, bishop, rook, queen, king
+	int BLACK_MULTIPLIER;
+	int WHITE_MULTIPLIER;
+	bool myBotIsWhite;
 
 	//Debug variables.
-	private int highestValueLastTime;
+	int highestValueLastTime;
 
 	public Move Think(Board board, Timer timer) {
 		//Cache the state of the board.
@@ -110,18 +106,6 @@ public class MyBot : IChessBot {
 			m_board.UndoMove(a_move);
 			moveEvaluationScore += DRAW_VALUE;
 			return moveEvaluationScore;
-		}
-
-		if (a_move.IsCastles) {
-			moveEvaluationScore += CASTLES_VALUE;
-		}
-
-		if (a_move.IsEnPassant) {
-			moveEvaluationScore += ENPASSANT_VALUE;
-		}
-
-		if (a_move.IsCapture) {
-			moveEvaluationScore += CAPTURE_VALUE;
 		}
 
 		//Get the value of the whole board if the move is made.
