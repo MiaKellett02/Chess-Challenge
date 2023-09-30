@@ -3,8 +3,8 @@ using System;
 using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Emit;
 
+//MiaBotv4.0
 public class MyBot : IChessBot {
 	//Consts.
 	const int EVALUATION_RECURSIVE_DEPTH = 3;//This is how many moves ahead the bot will think about.
@@ -187,12 +187,13 @@ public class MyBot : IChessBot {
 			moveEvaluationScore += ENEMY_CAPTURED_MULTIPLIER * capturedPieceValue;
 
 			//Since we captured a piece, decide randomly if it's worth checking one level deeper.
-			if (RandomChanceToPass(25) && s_timesGoneDeeper < MAX_TIMES_TO_RANDOMLY_GO_DEEPER) {
+			bool canGoDeeper = s_timesGoneDeeper < MAX_TIMES_TO_RANDOMLY_GO_DEEPER;
+			if (RandomChanceToPass(25) && canGoDeeper) {
 				currentDepth++;
 				s_timesGoneDeeper++;
 				//ChessChallenge.Application.ConsoleHelper.Log("Going to check 1 level deeper!!");
 				chancesPassed++;
-			} else {
+			} else if(canGoDeeper) {
 				chancesFailed++;
 			}
 		}
