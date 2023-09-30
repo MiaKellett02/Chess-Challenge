@@ -4,257 +4,233 @@ using System;
 namespace ChessChallenge.Example {
 
 	/// <summary>
-	// alfiebotv13.17-16-08-2023
+	// alfiebotv15.09-30-09-2023
 	/// </summary>
 	public class EvilBot : IChessBot {
-		//Value of pieces for taking and protecting.
-		public enum PieceValues {
-			PAWN = 100,
-			BISHOP = 200,
-			KNIGHT = 150,
-			ROOK = 200,
-			QUEEN = 400,
-			KING = 800
-		}
+	   //Value of pieces for taking and protecting.
+    //Value of pieces for taking and protecting - None, Pawn, Knight, Bishop, Rook, King, Queen.
+    static public int[] pieceValues = { 0, 110, 150, 275, 275, 400, 1500 };
 
-		//Cost of moving a piece, to discourage moving high value pieces.
-		public enum MoveCost {
-			PAWN = 25,
-			BISHOP = 50,
-			KNIGHT = 38,
-			ROOK = 50,
-			QUEEN = 100,
-			KING = 150
-		}
+    //Cost of moving a piece, to discourage moving high value pieces - None, Pawn, Knight, Bishop, Rook, King, Queen.
+    static public int[] pieceMoveCost = { 0, 25, 38, 50, 50, 100, 175 };
 
-		//Interest level of a move adds additional levels of recursion to a move
-		public enum Interest {
-			NONE = 0,
-			LOW = 0,
-			MEDIUM = 0,
-			HIGH = 2,
-		}
 
-		//Scores awarded for various states of the game.
-		const int checkValue = 100;
-		const int checkMateValue = 1000000;
-		const int potentialCheckmateValue = 400;
-		const int drawValue = -10000000;
+    //Interest level of a move adds additional levels of recursion to a move
+    public enum Interest {
+        NONE = 0,
+        LOW = 0,
+        MEDIUM = 0,
+        HIGH = 2,
+    }
 
-		//Bonuses given to special moves.
-		const int promotionBonus = 100;
-		const int enPassantBonus = 100;
-		const int castleBonus = 75;
+    //Scores awarded for various states of the game.
+    const int checkValue = 100;
+    const int checkMateValue = 1000000;
+    const int potentialCheckmateValue = 600;
+    const int drawValue = -10000000;
 
-		//Base level of recursion to use when evaluating a move.
-		const int baseMoveDepth = 3;
+    //Bonuses given to special moves.
+    const int promotionBonus = 100;
+    const int enPassantBonus = 100;
+    const int castleBonus = 75;
 
-		//Whether its the players turn or not.
-		static bool isMyTurn;
-		//Multiplier that sets preference to protecting pieces on the players turn.
-		const float myPieceMultiplier = 1.4f;
-		//Multiplier that is added to weight the enemies move higher than the players move
-		const float enemyTurnMultiplier = 1f;
+    //Rewards for tempting pieces into certain areas
+    const int closerToCentreBonus = 25;
 
-		//An evaluated move with a score, a level of interest and an assigned move
-		public struct EvaluatedMove {
-			//Score - How valuable this move is to the current player.
-			public int score;
-			//Intrest - How intresting a move is which can be used as a bonus to provide deeper levels of recursion.
-			public Interest interest;
-			//Move - The move that is made using the chess challenge API.
-			public Move move;
+    //Base level of recursion to use when evaluating a move.
+    const int baseMoveDepth = 3;
 
-			public EvaluatedMove(Move _move) {
-				score = 0;
-				interest = Interest.NONE;
-				move = _move;
-			}
-		}
+    //Whether its the players turn or not.
+    static bool isMyTurn;
+    //Multiplier that sets preference to protecting pieces on the players turn.
+    const float myPieceMultiplier = 1.3f;
+    //Multiplier that is added to weight the enemies move higher than the players move
+    const float enemyTurnMultiplier = 1f;
 
-		public Move Think(Board board, Timer timer) {
-			//Upon begining to think it should be the players turn.
-			isMyTurn = true;
+    //An evaluated move with a score, a level of interest and an assigned move
+    public struct EvaluatedMove {
+        //Score - How valuable this move is to the current player.
+        public int score;
+        //Intrest - How intresting a move is which can be used as a bonus to provide deeper levels of recursion.
+        public Interest interest;
+        //Move - The move that is made using the chess challenge API.
+        public Move move;
 
-			//Get All Moves
-			Move[] moves = board.GetLegalMoves();
-			EvaluatedMove[] evaluatedMoves = EvaluateMoves(moves, board, timer);
+        public EvaluatedMove(Move _move) {
+            score = 0;
+            interest = Interest.NONE;
+            move = _move;
+        }
+    }
 
-			//Get the highest scoring move from all the evaluated moves, this will (hopefully) be the optimal move
-			EvaluatedMove bestMove = GetBestMove(evaluatedMoves);
+    public Move Think(Board board, Timer timer) {
+        //Upon begining to think it should be the players turn.
+        isMyTurn = true;
 
-			Console.WriteLine($"Best move score: {bestMove.score}");
-			return bestMove.move;
-		}
+        //Get All Moves
+        Span<Move> moveSpan = stackalloc Move[500];
+        board.GetLegalMovesNonAlloc(ref moveSpan);
 
-		public EvaluatedMove[] EvaluateMoves(Move[] moves, Board board, Timer timer, int currentDepth = 1, int recursiveDepth = baseMoveDepth) {
-			//Creates an array of evaluated moves equal to the amount of possible legal moves
-			EvaluatedMove[] evaluatedMoves = new EvaluatedMove[moves.Length];
+        Span<EvaluatedMove> evaluatedMovesSpan = stackalloc EvaluatedMove[moveSpan.Length];
+        var evaluatedMoves = EvaluateMoves(moveSpan, evaluatedMovesSpan, board, timer);
 
-			//Consider all legal moves, with current and max depth set, by default this is base depth
-			for (int i = 0; i < evaluatedMoves.Length; i++) {
-				evaluatedMoves[i] = EvaluateMove(moves[i], board, timer, currentDepth, recursiveDepth);
-			}
+        //Get the highest scoring move from all the evaluated moves, this will (hopefully) be the optimal move
+        EvaluatedMove bestMove = GetBestMove(evaluatedMoves);
 
-			return evaluatedMoves;
-		}
+        Console.WriteLine($"Best move score: {bestMove.score}");
+        return bestMove.move;
+    }
 
-		public static EvaluatedMove GetBestMove(EvaluatedMove[] evaluatedMoves) {
-			//Chooses a random move, if no move is deemed better, this is the move that is made.
-			Random rng = new();
-			EvaluatedMove bestMove = evaluatedMoves[rng.Next(evaluatedMoves.Length)];
+    public Span<EvaluatedMove> EvaluateMoves(Span<Move> moveSpan, Span<EvaluatedMove> evaluatedMovesSpan, Board board, Timer timer, int currentDepth = 1, int recursiveDepth = baseMoveDepth) {
+        //Consider all legal moves, with current and max depth set, by default this is base depth
+        for (int i = 0; i < evaluatedMovesSpan.Length; i++) {
+            evaluatedMovesSpan[i] = EvaluateMove(moveSpan[i], board, timer, currentDepth, recursiveDepth);
+        }
 
-			//Gets the best move
-			for (int i = 0; i < evaluatedMoves.Length; i++) {
-				if (isMyTurn) {
-					if (evaluatedMoves[i].score > bestMove.score)
-						bestMove = evaluatedMoves[i];
-				} else {
-					if (evaluatedMoves[i].score < bestMove.score)
-						bestMove = evaluatedMoves[i];
-				}
-			}
+        return evaluatedMovesSpan;
+    }
 
-			return bestMove;
-		}
+    public static EvaluatedMove GetBestMove(Span<EvaluatedMove> evaluatedMovesSpan) {
+        //Chooses a random move, if no move is deemed better, this is the move that is made.
+        Random rng = new();
+        EvaluatedMove bestMove = evaluatedMovesSpan[rng.Next(evaluatedMovesSpan.Length)];
 
-		public EvaluatedMove EvaluateMove(Move move, Board board, Timer timer, int currentDepth, int recursiveDepth = baseMoveDepth) {
-			EvaluatedMove evalMove = new(move);
-			int score = 0;
+        //Gets the best move
+        for (int i = 0; i < evaluatedMovesSpan.Length; i++) {
+            if (isMyTurn) {
+                if (evaluatedMovesSpan[i].score > bestMove.score)
+                    bestMove = evaluatedMovesSpan[i];
+            }
+            else {
+                if (evaluatedMovesSpan[i].score < bestMove.score)
+                    bestMove = evaluatedMovesSpan[i];
+            }
+        }
 
-			//================================================
-			//If the move is a capture move, how valuable would the captured piece be?
-			if (move.IsCapture) {
-				switch (move.CapturePieceType) {
+        return bestMove;
+    }
 
-					case PieceType.Pawn:
-						evalMove.interest = Interest.LOW;
-						score += EvaluatePieceValue((int)PieceValues.PAWN);
-						break;
-					case PieceType.Bishop:
-						evalMove.interest = Interest.MEDIUM;
-						score += EvaluatePieceValue((int)PieceValues.BISHOP);
-						break;
-					case PieceType.Knight:
-						evalMove.interest = Interest.MEDIUM;
-						score += EvaluatePieceValue((int)PieceValues.KNIGHT);
-						break;
-					case PieceType.Rook:
-						evalMove.interest = Interest.MEDIUM;
-						score += EvaluatePieceValue((int)PieceValues.ROOK);
-						break;
-					case PieceType.Queen:
-						evalMove.interest = Interest.MEDIUM;
-						score += EvaluatePieceValue((int)PieceValues.QUEEN);
-						break;
-					default:
-						evalMove.interest = Interest.NONE;
-						break;
-				}
-			}
-			//================================================
+    public EvaluatedMove EvaluateMove(Move move, Board board, Timer timer, int currentDepth, int recursiveDepth = baseMoveDepth) {
+        EvaluatedMove evalMove = new(move);
+        float score = 0;
 
-			//================================================
-			//Each piece has a movement cost, to discourage throwing valuable pieces at the enemy
-			switch (move.MovePieceType) {
-				case (PieceType.Pawn):
-					score -= (int)MoveCost.PAWN;
-					break;
-				case (PieceType.Bishop):
-					score -= (int)MoveCost.BISHOP;
-					break;
-				case (PieceType.Knight):
-					score -= (int)MoveCost.KNIGHT;
-					break;
-				case (PieceType.Rook):
-					score -= (int)MoveCost.ROOK;
-					break;
-				case (PieceType.Queen):
-					score -= (int)MoveCost.QUEEN;
-					break;
-				case (PieceType.King):
-					score -= (int)MoveCost.KING;
-					break;
+        //================================================
+        //If the move is a capture move, how valuable would the captured piece be?
+        if (move.IsCapture) {
+            score += EvaluatePieceValue(pieceValues[(int)move.CapturePieceType]);
+        }
+        else {
+            if (move.MovePieceType == PieceType.Knight && SquareIsCloseToCenter(move.TargetSquare)) {
+                score += closerToCentreBonus;
+            }
+            else {
+                score -= closerToCentreBonus;
+            }
+        }
+        //================================================
 
-			}
-			//================================================
+        //================================================
+        //Each piece has a movement cost, to discourage throwing valuable pieces at the enemy
+        score -= pieceMoveCost[(int)move.MovePieceType];
+        //================================================
 
-			//================================================
-			//Checks next move to see if its advantagous
-			board.MakeMove(move);
-			isMyTurn = !isMyTurn;
+        //================================================
+        //Checks next move to see if its advantagous
+        board.MakeMove(move);
+        isMyTurn = !isMyTurn;
 
-			if (board.IsInCheck()) {
-				evalMove.interest = Interest.HIGH;
-				score += checkValue;
-			}
+        float checkingScore = 0;
 
-			if (board.IsInCheckmate()) {
-				if (currentDepth == 1)
-					score += checkMateValue;
-				else
-					score += potentialCheckmateValue;
-			}
+        if (board.IsInCheck()) {
+            evalMove.interest = Interest.HIGH;
+            checkingScore += checkValue;
+        }
 
-			if (board.IsDraw()) {
-				score += drawValue;
-			}
+        if (board.IsInCheckmate()) {
+            if (currentDepth == 1)
+                checkingScore += checkMateValue;
+            else
+                checkingScore += potentialCheckmateValue;
+        }
 
-			isMyTurn = !isMyTurn;
-			board.UndoMove(move);
-			//================================================
+        score += checkingScore;
 
-			//================================================
-			//Bonus scores given to special moves
-			if (move.IsPromotion)
-				score += promotionBonus;
+        if (board.IsDraw()) {
+            score += drawValue;
+        }
 
-			if (move.IsEnPassant)
-				score += enPassantBonus;
+        isMyTurn = !isMyTurn;
+        board.UndoMove(move);
+        //================================================
 
-			if (move.IsCastles)
-				score += castleBonus;
-			//===============================================
+        //================================================
+        //Bonus scores given to special moves
+        if (move.IsPromotion)
+            score += promotionBonus;
 
-			//Moves that are made from the other player are negative, and are retracted from a moves scoring
-			evalMove.score /= currentDepth;
-			evalMove.score += (int)(score * TurnMultipler());
+        if (move.IsEnPassant)
+            score += enPassantBonus;
 
-			//Bonus depth is added depending on how interesting that move was + time must be above 5 seconds to prevent timeout
-			int depthToExplore = currentDepth == 1 && timer.MillisecondsRemaining > 5000 ? recursiveDepth + (int)evalMove.interest : recursiveDepth;
+        if (move.IsCastles)
+            score += castleBonus;
+        //===============================================
 
-			//THE SECRET SAUCE // Moves are checked recursively to decide whether a move would be good or not, the moves alternate players
-			if (currentDepth < recursiveDepth) {
-				board.MakeMove(move);
-				isMyTurn = !isMyTurn;
+        //Moves that are made from the other player are negative, and are retracted from a moves scoring
+        //score /= (int)Math.Round((currentDepth / (double)2), MidpointRounding.AwayFromZero) * 2;
+        evalMove.score += (int)(score * TurnMultipler());
 
-				Move[] legalMoves = board.GetLegalMoves();
-				if (legalMoves.Length > 0) {
-					EvaluatedMove nextBestMove = GetBestMove(EvaluateMoves(board.GetLegalMoves(), board, timer, currentDepth + 1, depthToExplore));
-					evalMove.score += nextBestMove.score;
-				}
+        //Bonus depth is added depending on how interesting that move was + time must be above 5 seconds to prevent timeout
+        int depthToExplore = currentDepth == 1 && timer.MillisecondsRemaining > 5000 ? recursiveDepth + (int)evalMove.interest : recursiveDepth;
 
-				board.UndoMove(move);
-				isMyTurn = !isMyTurn;
-			}
+        //THE SECRET SAUCE // Moves are checked recursively to decide whether a move would be good or not, the moves alternate players
+        if (currentDepth < recursiveDepth) {
+            board.MakeMove(move);
+            isMyTurn = !isMyTurn;
 
-			return evalMove;
-		}
+            Span<Move> moveSpan = stackalloc Move[500];
+            board.GetLegalMovesNonAlloc(ref moveSpan);
 
-		//When its the enemies turn the scores are flipped.
-		static float TurnMultipler() {
-			if (isMyTurn)
-				return 1;
-			else
-				return -enemyTurnMultiplier;
-		}
+            if (moveSpan.Length > 0) {
+                Span<EvaluatedMove> evaluatedMovesSpan = stackalloc EvaluatedMove[moveSpan.Length];
 
-		//Multplier that prioritises protecting high value pieces over taking pieces.
-		static int EvaluatePieceValue(int pieceValue) {
-			if (isMyTurn)
-				return pieceValue;
-			else
-				return (int)(myPieceMultiplier * pieceValue);
-		}
+                EvaluatedMove nextBestMove = GetBestMove(EvaluateMoves(moveSpan, evaluatedMovesSpan, board, timer, currentDepth + 1, depthToExplore));
+                evalMove.score += nextBestMove.score;
+            }
+
+            board.UndoMove(move);
+            isMyTurn = !isMyTurn;
+        }
+
+        return evalMove;
+    }
+
+    //When its the enemies turn the scores are flipped.
+    static float TurnMultipler() {
+        if (isMyTurn)
+            return 1;
+        else
+            return -enemyTurnMultiplier;
+    }
+
+    //Multplier that prioritises protecting high value pieces over taking pieces.
+    static int EvaluatePieceValue(int pieceValue) {
+        if (isMyTurn)
+            return pieceValue;
+        else
+            return (int)(myPieceMultiplier * pieceValue);
+    }
+
+    private bool SquareIsCloseToCenter(Square square) {
+        if (square.File > 1 && square.File < 6 && square.Rank > 1 && square.Rank < 6) {
+            return true;
+        }
+
+        return false;
+    }
+    /*
+    private bool SquareInOpen(Square square, Board board) {
+        board.
+    }
+    */
 	}
 }
