@@ -20,8 +20,9 @@ public class MyBot : IChessBot {
 	const int NO_ENEMY_CAPTURE_VALUE = -10; //When a move doesn't capture anything it is given this weight.
 	const int ENEMY_CAPTURED_MULTIPLIER = 10;
 	const int CHECKMATE_VALUE = 1000000;
-	const int CHECK_VALUE = 1000;
-	const int DRAW_VALUE = -1000;
+	const int POTENTIAL_CHECKMATE_VALUE = 500;
+	const int CHECK_VALUE = 100;
+	const int DRAW_VALUE = -1000000;
 	//The consts after this line are the weights added to each move when it doesn't
 	//lead to a capture depending on the piece being moved.
 	const int KING_MOVE_SCORE_WEIGHT = -1000;
@@ -42,17 +43,9 @@ public class MyBot : IChessBot {
 	static Random rng;
 	static int s_timesGoneDeeper = 0;
 
-	//Debug variables.
-	bool showDebug = false;
-	int highestValueLastTime;
-	int chancesPassed;
-	int chancesFailed;
-
 	public Move Think(Board board, Timer timer) {
 		//Reset gone deeper counter.
 		s_timesGoneDeeper = 0;
-		chancesPassed = 0;
-		chancesFailed = 0;
 
 		//Cache the state of the board.
 		m_board = board;
@@ -71,17 +64,6 @@ public class MyBot : IChessBot {
 				bestMove = move;
 				highestValue = value;
 			}
-		}
-
-		//DEBUG
-		if (highestValueLastTime != highestValue && showDebug) {
-			highestValueLastTime = highestValue;
-			Console.WriteLine(
-				"HighestValue: " + highestValue.ToString() +
-				"\nTimes Checked Deeper: " + chancesPassed.ToString() +
-				"\nTimes Not Gone Deeper:" + chancesFailed.ToString() +
-				"\n===================================================="
-			);
 		}
 
 		//Return the move to make.
@@ -118,9 +100,20 @@ public class MyBot : IChessBot {
 		m_board.MakeMove(a_move);
 
 		//Check the board for different main game states.
-		if (m_board.IsInCheckmate()) { 
-			//NEED TO SOMEHOW CHECK IF THIS WILL LEAD TO STALEMATE TOO.
-			moveEvaluationScore += CHECKMATE_VALUE;
+		if (m_board.IsInCheckmate()) {
+			if (currentDepth == 1 || m_board.IsWhiteToMove != myBotIsWhite) {
+				moveEvaluationScore += CHECKMATE_VALUE;
+				m_board.UndoMove(a_move);
+				return moveEvaluationScore; //Clip branch since it will likely lead to checkmate.
+			} else {
+				moveEvaluationScore += POTENTIAL_CHECKMATE_VALUE;
+				//Since we might be putting a piece in checkmate, decide randomly if it's worth checking one level deeper.
+				bool canGoDeeper = s_timesGoneDeeper < MAX_TIMES_TO_RANDOMLY_GO_DEEPER;
+				if (RandomChanceToPass(CHANCE_TO_GO_DEEPER_ON_PIECE_CAPTURED) && canGoDeeper) {
+					depthRemaining++;
+					s_timesGoneDeeper++;
+				}
+			}
 		}
 
 		if (m_board.IsInCheck()) {
@@ -203,15 +196,13 @@ public class MyBot : IChessBot {
 				//Mutliply the captured piece's value by the enemy captured multiplier.
 				moveEvaluationScore += capturedPieceValue * ENEMY_CAPTURED_MULTIPLIER;
 
-				//Since we captured a piece, decide randomly if it's worth checking one level deeper.
-				bool canGoDeeper = s_timesGoneDeeper < MAX_TIMES_TO_RANDOMLY_GO_DEEPER;
-				if (RandomChanceToPass(CHANCE_TO_GO_DEEPER_ON_PIECE_CAPTURED) && canGoDeeper) {
-					depthRemaining++;
-					s_timesGoneDeeper++;
-					chancesPassed++;
-				} else if (canGoDeeper) {
-					chancesFailed++;
-				}
+			}
+
+			//Since we captured a piece, decide randomly if it's worth checking one level deeper.
+			bool canGoDeeper = s_timesGoneDeeper < MAX_TIMES_TO_RANDOMLY_GO_DEEPER;
+			if (RandomChanceToPass(CHANCE_TO_GO_DEEPER_ON_PIECE_CAPTURED) && canGoDeeper) {
+				depthRemaining++;
+				s_timesGoneDeeper++;
 			}
 		}
 
@@ -288,21 +279,6 @@ public class MyBot : IChessBot {
 			}
 		}
 		//No moves will capture the piece.
-		return false;
-	}
-
-	private bool WillCurrentMoveLeadToStalemate() {
-		//Get list of next posisble moves.
-		foreach (Move move in m_board.GetLegalMoves()) {
-			//Compare them with the original.
-			m_board.MakeMove(move);
-			if (m_board.IsInStalemate()) {
-				m_board.UndoMove(move);
-				return true;
-			}
-			m_board.UndoMove(move);
-		}
-		//No moves will stalement the piece.
 		return false;
 	}
 }
