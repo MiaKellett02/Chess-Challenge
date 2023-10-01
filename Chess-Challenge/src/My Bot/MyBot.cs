@@ -50,6 +50,8 @@ public class MyBot : IChessBot {
 	public Move Think(Board board, Timer timer) {
 		//Reset gone deeper counter.
 		s_timesGoneDeeper = 0;
+		chancesPassed = 0;
+		chancesFailed = 0;
 
 		//Cache the state of the board.
 		m_board = board;
