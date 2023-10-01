@@ -10,7 +10,7 @@ using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 
-//MiaKBotv4.2
+//MiaKBotv4.4
 public class MyBot : IChessBot {
 	//Consts.
 	const int EVALUATION_RECURSIVE_DEPTH = 3;//This is how many moves ahead the bot will think about.
