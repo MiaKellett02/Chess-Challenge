@@ -15,7 +15,7 @@ public class MyBot : IChessBot {
 	//Consts.
 	const int EVALUATION_RECURSIVE_DEPTH = 3;//This is how many moves ahead the bot will think about.
 	const int CHANCE_TO_GO_DEEPER_ON_PIECE_CAPTURED = 25;
-	const int MAX_TIMES_TO_RANDOMLY_GO_DEEPER = 10;
+	const int MAX_TIMES_TO_RANDOMLY_GO_DEEPER = 50000;
 	//The consts after this line are values of a move based on the state of the board after that move 
 	const int NO_ENEMY_CAPTURE_VALUE = -10; //When a move doesn't capture anything it is given this weight.
 	const int ENEMY_CAPTURED_MULTIPLIER = 10;
@@ -34,6 +34,7 @@ public class MyBot : IChessBot {
 
 	//Variables.
 	Board m_board;
+	Timer m_timer;
 	int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };// Piece values: null, pawn, knight, bishop, rook, queen, king
 	int BLACK_MULTIPLIER;
 	int WHITE_MULTIPLIER;
@@ -49,6 +50,7 @@ public class MyBot : IChessBot {
 
 		//Cache the state of the board.
 		m_board = board;
+		m_timer = timer;
 		myBotIsWhite = m_board.IsWhiteToMove;
 
 		//Get all the legal moves.
@@ -109,7 +111,7 @@ public class MyBot : IChessBot {
 				moveEvaluationScore += POTENTIAL_CHECKMATE_VALUE;
 				//Since we might be putting a piece in checkmate, decide randomly if it's worth checking one level deeper.
 				bool canGoDeeper = s_timesGoneDeeper < MAX_TIMES_TO_RANDOMLY_GO_DEEPER;
-				if (RandomChanceToPass(CHANCE_TO_GO_DEEPER_ON_PIECE_CAPTURED) && canGoDeeper) {
+				if (RandomChanceToPass((int)(InverseLerp(0, 60000, m_timer.MillisecondsRemaining) * 100)) && canGoDeeper) {
 					depthRemaining++;
 					s_timesGoneDeeper++;
 				}
@@ -200,7 +202,7 @@ public class MyBot : IChessBot {
 
 			//Since we captured a piece, decide randomly if it's worth checking one level deeper.
 			bool canGoDeeper = s_timesGoneDeeper < MAX_TIMES_TO_RANDOMLY_GO_DEEPER;
-			if (RandomChanceToPass(CHANCE_TO_GO_DEEPER_ON_PIECE_CAPTURED) && canGoDeeper) {
+			if (RandomChanceToPass((int)(InverseLerp(0, 60000, m_timer.MillisecondsRemaining) * 100)) && canGoDeeper) {
 				depthRemaining++;
 				s_timesGoneDeeper++;
 			}
@@ -280,5 +282,8 @@ public class MyBot : IChessBot {
 		}
 		//No moves will capture the piece.
 		return false;
+	}
+	public static float InverseLerp(float a, float b, float value) {
+		return (value - a) / (b - a);
 	}
 }
