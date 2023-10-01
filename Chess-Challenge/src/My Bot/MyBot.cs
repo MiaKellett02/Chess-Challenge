@@ -110,7 +110,7 @@ public class MyBot : IChessBot {
 				moveEvaluationScore += POTENTIAL_CHECKMATE_VALUE;
 				//Since we might be putting a piece in checkmate, decide randomly if it's worth checking one level deeper.
 				bool canGoDeeper = s_timesGoneDeeper < MAX_TIMES_TO_RANDOMLY_GO_DEEPER;
-				if (RandomChanceToPass((int)(InverseLerp(0, 60000, m_timer.MillisecondsRemaining) * 100)) && canGoDeeper) {
+				if (RandomChanceToPass((int)(InverseLerp(0, m_timer.GameStartTimeMilliseconds, m_timer.MillisecondsRemaining) * 100)) && canGoDeeper) {
 					depthRemaining++;
 					s_timesGoneDeeper++;
 				}
@@ -201,7 +201,7 @@ public class MyBot : IChessBot {
 
 			//Since we captured a piece, decide randomly if it's worth checking one level deeper.
 			bool canGoDeeper = s_timesGoneDeeper < MAX_TIMES_TO_RANDOMLY_GO_DEEPER;
-			if (RandomChanceToPass((int)(InverseLerp(0, 60000, m_timer.MillisecondsRemaining) * 100)) && canGoDeeper) {
+			if (RandomChanceToPass((int)(InverseLerp(0, m_timer.GameStartTimeMilliseconds, m_timer.MillisecondsRemaining) * 100)) && canGoDeeper) {
 				depthRemaining++;
 				s_timesGoneDeeper++;
 			}
