@@ -17,7 +17,7 @@ public class MyBot : IChessBot {
 	const int CHANCE_TO_GO_DEEPER_ON_PIECE_CAPTURED = 25;
 	const int MAX_TIMES_TO_RANDOMLY_GO_DEEPER = 10;
 	//The consts after this line are values of a move based on the state of the board after that move 
-	const int NO_ENEMY_CAPTURE_VALUE = -100; //When a move doesn't capture anything it is given this weight.
+	const int NO_ENEMY_CAPTURE_VALUE = -10; //When a move doesn't capture anything it is given this weight.
 	const int ENEMY_CAPTURED_MULTIPLIER = 100;
 	const int CHECKMATE_VALUE = 1000000;
 	const int CHECK_VALUE = 1000;
@@ -99,7 +99,6 @@ public class MyBot : IChessBot {
 
 		//Get the current turn's colour.
 		bool currentTurnIsWhite = m_board.IsWhiteToMove;
-		bool currentTurnIsMyBot = currentTurnIsWhite == myBotIsWhite;
 		if (currentTurnIsWhite) {
 			//Count white pieces vs black pieces.
 			//White pieces give positive value and black pieces give negative value.
