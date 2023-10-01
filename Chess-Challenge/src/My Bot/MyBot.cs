@@ -17,19 +17,19 @@ public class MyBot : IChessBot {
 	const int CHANCE_TO_GO_DEEPER_ON_PIECE_CAPTURED = 25;
 	const int MAX_TIMES_TO_RANDOMLY_GO_DEEPER = 10;
 	//The consts after this line are values of a move based on the state of the board after that move 
-	const int NO_ENEMY_CAPTURE_VALUE = -1000000; //When a move doesn't capture anything it is given this weight.
-	const int ENEMY_CAPTURED_MULTIPLIER = 10000;
-	const int CHECKMATE_VALUE = 1000000000;
-	const int CHECK_VALUE = 100000;
-	const int DRAW_VALUE = -100000;
+	const int NO_ENEMY_CAPTURE_VALUE = -100; //When a move doesn't capture anything it is given this weight.
+	const int ENEMY_CAPTURED_MULTIPLIER = 100;
+	const int CHECKMATE_VALUE = 1000000;
+	const int CHECK_VALUE = 1000;
+	const int DRAW_VALUE = -1000;
 	//The consts after this line are the weights added to each move when it doesn't
 	//lead to a capture depending on the piece being moved.
 	const int KING_MOVE_SCORE_WEIGHT = -1000;
-	const int QUEEN_MOVE_SCORE_WEIGHT = 100;
-	const int ROOK_MOVE_SCORE_WEIGHT = 100;
-	const int BISHOP_MOVE_SCORE_WEIGHT = 100;
-	const int KNIGHT_MOVE_SCORE_WEIGHT = 100;
-	const int PAWN_MOVE_SCORE_WEIGHT = 1000;
+	const int QUEEN_MOVE_SCORE_WEIGHT = 1;
+	const int ROOK_MOVE_SCORE_WEIGHT = 1;
+	const int BISHOP_MOVE_SCORE_WEIGHT = 1;
+	const int KNIGHT_MOVE_SCORE_WEIGHT = 1;
+	const int PAWN_MOVE_SCORE_WEIGHT = 100;
 
 	//Variables.
 	Board m_board;
@@ -43,6 +43,7 @@ public class MyBot : IChessBot {
 	static int s_timesGoneDeeper = 0;
 
 	//Debug variables.
+	bool showDebug = false;
 	int highestValueLastTime;
 	int chancesPassed;
 	int chancesFailed;
@@ -73,7 +74,7 @@ public class MyBot : IChessBot {
 		}
 
 		//DEBUG
-		if (highestValueLastTime != highestValue) {
+		if (highestValueLastTime != highestValue && showDebug) {
 			highestValueLastTime = highestValue;
 			Console.WriteLine(
 				"HighestValue: " + highestValue.ToString() +
@@ -118,15 +119,18 @@ public class MyBot : IChessBot {
 		m_board.MakeMove(a_move);
 
 		//Check the board for different main game states.
-		if (m_board.IsInCheckmate()) {
+		if (m_board.IsInCheckmate()) { 
+			//NEED TO SOMEHOW CHECK IF THIS WILL LEAD TO STALEMATE TOO.
 			moveEvaluationScore += CHECKMATE_VALUE;
 		}
 
 		if (m_board.IsInCheck()) {
 			//moveEvaluationScore += CHECK_VALUE;
-			if (SquareIsGoingToBeAttackedByOpponent(a_move.TargetSquare) && movePieceType == PieceType.Queen) {
+			if (SquareIsGoingToBeAttackedByOpponent(a_move.TargetSquare)) {
 				//We don't want to check the enemy if they're gonna take one of our high value pieces.
-				moveEvaluationScore += (-(CHECK_VALUE));
+				moveEvaluationScore += (-(CHECK_VALUE * movePieceValue));
+			} else {
+				moveEvaluationScore += CHECK_VALUE;
 			}
 		}
 
@@ -214,12 +218,10 @@ public class MyBot : IChessBot {
 
 		if (depthRemaining > 0) {
 			//Get list of next posisble moves.
-			Move[] nextMoves = m_board.GetLegalMoves();
-
 			//Evaluate each of those moves with 1 less depth than the previous call of evaluate.
 			//When it reaches 0 then the recursive loop will exit with the best approximate move.
 			int worstScoreForPreviousPlayer = int.MaxValue;
-			foreach (Move move in nextMoves) {
+			foreach (Move move in m_board.GetLegalMoves()) {
 				int moveScore = -Evaluate(move, depthRemaining, currentDepth); //Inverts the evaluation score as what's best for the next player won't be best for the current player.
 				if (moveScore < worstScoreForPreviousPlayer) {
 					worstScoreForPreviousPlayer = moveScore;
@@ -279,15 +281,29 @@ public class MyBot : IChessBot {
 	}
 
 	private bool SquareIsGoingToBeAttackedByOpponent(Square originalSquare) {
-		//Get list of next posisble moves.
-		Move[] nextMoves = m_board.GetLegalMoves();
-		foreach (Move move in nextMoves) {
+		//Get list of next posisble moves
+		foreach (Move move in m_board.GetLegalMoves()) {
 			//Compare them with the original.
 			if (move.TargetSquare == originalSquare) {
 				return true;
 			}
 		}
 		//No moves will capture the piece.
+		return false;
+	}
+
+	private bool WillCurrentMoveLeadToStalemate() {
+		//Get list of next posisble moves.
+		foreach (Move move in m_board.GetLegalMoves()) {
+			//Compare them with the original.
+			m_board.MakeMove(move);
+			if (m_board.IsInStalemate()) {
+				m_board.UndoMove(move);
+				return true;
+			}
+			m_board.UndoMove(move);
+		}
+		//No moves will stalement the piece.
 		return false;
 	}
 }
