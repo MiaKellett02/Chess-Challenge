@@ -117,19 +117,15 @@ public class MyBot : IChessBot {
 
 		//Check the board for different main game states.
 		if (m_board.IsInCheckmate()) {
-			//Always do checkmate.
-			m_board.UndoMove(a_move);
-			return CHECKMATE_VALUE;
+			moveEvaluationScore += CHECKMATE_VALUE;
 		}
 
-		if (m_board.IsInCheck()) {
-			moveEvaluationScore += CHECK_VALUE;
-		}
+		//if (m_board.IsInCheck()) {
+		//	moveEvaluationScore += CHECK_VALUE;
+		//}
 
-		if (m_board.IsDraw()) { //Stalemate, draw, repetition, insuffcient material etc...
-			m_board.UndoMove(a_move);
+		if (m_board.IsDraw()) {
 			moveEvaluationScore += DRAW_VALUE;
-			return moveEvaluationScore;
 		}
 
 		//Get the value of the whole board if the move is made.
@@ -142,11 +138,7 @@ public class MyBot : IChessBot {
 			//Then give it more incentive to move certain pieces in that case.
 			switch (movePieceType) {
 				case PieceType.King: {
-					if (SquareIsCloseToCenter(a_move.TargetSquare)) {
-						moveEvaluationScore += -KING_MOVE_SCORE_WEIGHT;
-					} else {
-						moveEvaluationScore += +KING_MOVE_SCORE_WEIGHT;
-					}
+					moveEvaluationScore += KING_MOVE_SCORE_WEIGHT;
 					break;
 				}
 				case PieceType.Queen: {
@@ -271,5 +263,21 @@ public class MyBot : IChessBot {
 		}
 		int randomValue = rng.Next(100);
 		return randomValue < a_percentageChance;
+	}
+
+	private bool SquareIsGoingToBeAttackedByOpponent(Square originalSquare) {
+		//Get list of next posisble moves.
+		Move[] nextMoves = m_board.GetLegalMoves();
+		foreach (Move move in nextMoves) {
+			//Get information about the new moves square.
+			Square newSquare = move.TargetSquare;
+
+			//Compare them with the original.
+			if (newSquare == originalSquare) {
+				return true;
+			}
+		}
+		//No moves will capture the piece.
+		return false;
 	}
 }
