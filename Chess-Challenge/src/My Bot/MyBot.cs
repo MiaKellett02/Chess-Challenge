@@ -10,7 +10,7 @@ using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 
-//MiaKBotv4.2
+//MiaKBotv4.0
 public class MyBot : IChessBot {
 	//Consts.
 	const int EVALUATION_RECURSIVE_DEPTH = 3;//This is how many moves ahead the bot will think about.
@@ -18,7 +18,7 @@ public class MyBot : IChessBot {
 	const int MAX_TIMES_TO_RANDOMLY_GO_DEEPER = 10;
 	//The consts after this line are values of a move based on the state of the board after that move 
 	const int NO_ENEMY_CAPTURE_VALUE = -10; //When a move doesn't capture anything it is given this weight.
-	const int ENEMY_CAPTURED_MULTIPLIER = 10;
+	const int ENEMY_CAPTURED_MULTIPLIER = 100;
 	const int CHECKMATE_VALUE = 1000000;
 	const int CHECK_VALUE = 1000;
 	const int DRAW_VALUE = -1000;
