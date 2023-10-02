@@ -14,6 +14,7 @@ using System.Linq;
 public class MyBot : IChessBot {
 	//Consts.
 	const int EVALUATION_RECURSIVE_DEPTH = 3;//This is how many moves ahead the bot will think about.
+	const int CHANCE_TO_GO_DEEPER_ON_PIECE_CAPTURED = 25;
 	const int MAX_TIMES_TO_RANDOMLY_GO_DEEPER = 50000;
 	//The consts after this line are values of a move based on the state of the board after that move 
 	const int NO_ENEMY_CAPTURE_VALUE = -10; //When a move doesn't capture anything it is given this weight.
