@@ -82,7 +82,7 @@ namespace ChessChallenge.Example {
 			//Get the highest scoring move from all the evaluated moves, this will (hopefully) be the optimal move
 			EvaluatedMove bestMove = GetBestMove(evaluatedMoves);
 
-			//Console.WriteLine($"Best move score: {bestMove.score}");
+			Console.WriteLine($"Best move score: {bestMove.score}");
 			return bestMove.move;
 		}
 
