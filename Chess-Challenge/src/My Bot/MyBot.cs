@@ -75,7 +75,7 @@ public class MyBot : IChessBot {
 		//DEBUG
 		if (highestValueLastTime != highestValue) {
 			highestValueLastTime = highestValue;
-			Console.WriteLine(
+			ChessChallenge.Application.ConsoleHelper.Log(
 				"HighestValue: " + highestValue.ToString() +
 				"\nTimes Checked Deeper: " + chancesPassed.ToString() +
 				"\nTimes Not Gone Deeper:" + chancesFailed.ToString() +
