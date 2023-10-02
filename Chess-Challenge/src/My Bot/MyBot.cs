@@ -3,7 +3,6 @@ using System;
 using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Emit;
 
 public class MyBot : IChessBot {
 	//Consts.
@@ -30,18 +29,10 @@ public class MyBot : IChessBot {
 	int WHITE_MULTIPLIER;
 	bool myBotIsWhite;
 
-	//Static variables.
-	static Random rng;
-
 	//Debug variables.
 	int highestValueLastTime;
 
 	public Move Think(Board board, Timer timer) {
-		//Seed rng
-		if (rng == null) {
-			rng = new Random(DateTime.Now.Millisecond);
-		}
-
 		//Cache the state of the board.
 		m_board = board;
 		myBotIsWhite = m_board.IsWhiteToMove;
@@ -50,6 +41,7 @@ public class MyBot : IChessBot {
 		Move[] moves = m_board.GetLegalMoves();
 
 		//Evalulate each move and choose best one.
+		Random rng = new Random((int)System.DateTime.UtcNow.Ticks);
 		Move bestMove = moves[rng.Next(moves.Length)];
 		int highestValue = Evaluate(bestMove, EVALUATION_RECURSIVE_DEPTH);
 		foreach (Move move in moves) {
