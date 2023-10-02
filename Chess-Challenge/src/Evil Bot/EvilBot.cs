@@ -3,18 +3,19 @@ using System;
 using System.Numerics;
 
 namespace ChessChallenge.Example {
+
 	//===============================
-	//Alfie Bot 4.2.0
+	//AlfieBotv03.33-01-10-2023
 	//===============================
 
 	public class EvilBot : IChessBot {
 		//Value of pieces for taking and protecting.
 		//Value of pieces for taking and protecting - None, Pawn, Knight, Bishop, Rook, King, Queen.
 		static public int[] pieceValues = { 0, 120, 175, 275, 275, 400, 1500 };
-		static public float captureRisksPieceMultiplier = 0.8f;
 
 		//Cost of moving a piece, to discourage moving high value pieces - None, Pawn, Knight, Bishop, Rook, King, Queen.
 		static public int[] pieceMoveCost = { 0, 25, 40, 50, 50, 100, 175 };
+
 
 		//Interest level of a move adds additional levels of recursion to a move
 		public enum Interest {
@@ -121,11 +122,7 @@ namespace ChessChallenge.Example {
 			//================================================
 			//If the move is a capture move, how valuable would the captured piece be?
 			if (move.IsCapture) {
-				if (!board.SquareIsAttackedByOpponent(move.TargetSquare))
-					score += EvaluatePieceValue(move.CapturePieceType);
-				else
-					score += EvaluatePieceValue(move.CapturePieceType) * captureRisksPieceMultiplier;
-
+				score += EvaluatePieceValue(move.CapturePieceType);
 				evalMove.interest = GetPieceTakeInterest(move.CapturePieceType, currentDepth);
 			} else {
 				if (move.MovePieceType == PieceType.Knight && SquareIsCloseToCenter(move.TargetSquare)) {
@@ -143,7 +140,6 @@ namespace ChessChallenge.Example {
 			score -= pieceMoveCost[(int)move.MovePieceType];
 			//================================================
 
-
 			//================================================
 			//Checks next move to see if its advantagous
 			board.MakeMove(move);
@@ -154,7 +150,7 @@ namespace ChessChallenge.Example {
 			if (board.IsInCheck()) {
 				checkingScore += checkValue;
 
-				if (RandomChanceToPass(20))
+				if (RandomChanceToPass(40))
 					evalMove.interest = Interest.MEDIUM;
 			}
 
@@ -165,7 +161,8 @@ namespace ChessChallenge.Example {
 					checkingScore += potentialCheckmateValue;
 				}
 
-				evalMove.interest = Interest.MEDIUM;
+				if (RandomChanceToPass(80))
+					evalMove.interest = Interest.MEDIUM;
 			}
 
 			score += checkingScore;
@@ -238,16 +235,6 @@ namespace ChessChallenge.Example {
 
 		static Interest GetPieceTakeInterest(PieceType pieceType, int currentDepth) {
 			switch (pieceType) {
-				case PieceType.Pawn:
-					if (RandomChanceToPass(5))
-						return Interest.MEDIUM;
-					return Interest.NONE;
-
-				case PieceType.Knight:
-					if (RandomChanceToPass(10))
-						return Interest.MEDIUM;
-					return Interest.NONE;
-
 				case PieceType.Rook:
 				case PieceType.Bishop:
 					if (RandomChanceToPass(50))
