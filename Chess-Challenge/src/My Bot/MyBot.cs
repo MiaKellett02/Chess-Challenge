@@ -1,10 +1,4 @@
-﻿////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Filename: MyBot.cs
-/// Author: Mia Kellett
-/// Date Created: 10/08/2023
-/// Purpose: MyBot thinks about what the best move it can make is to win a game of chess. Thinking multiple moves ahead.
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-using ChessChallenge.API;
+﻿using ChessChallenge.API;
 using System;
 using System.Numerics;
 using System.Collections.Generic;
@@ -14,9 +8,7 @@ using System.Linq;
 public class MyBot : IChessBot {
 	//Consts.
 	const int EVALUATION_RECURSIVE_DEPTH = 3;//This is how many moves ahead the bot will think about.
-	const int CHANCE_TO_GO_DEEPER_ON_PIECE_CAPTURED = 25;
-	const int MAX_TIMES_TO_RANDOMLY_GO_DEEPER = 10;
-	//The consts after this line are values of a move based on the state of the board after that move 
+											 //The consts after this line are values of a move based on the state of the board after that move 
 	const int NO_ENEMY_CAPTURE_VALUE = -1000000; //When a move doesn't capture anything it is given this weight.
 	const int ENEMY_CAPTURED_MULTIPLIER = 10000;
 	const int CHECKMATE_VALUE = 1000000000;
@@ -40,6 +32,7 @@ public class MyBot : IChessBot {
 
 	//Static variables.
 	static Random rng;
+	const int MAX_TIMES_TO_RANDOMLY_GO_DEEPER = 10;
 	static int s_timesGoneDeeper = 0;
 
 	//Debug variables.
@@ -48,8 +41,11 @@ public class MyBot : IChessBot {
 	int chancesFailed;
 
 	public Move Think(Board board, Timer timer) {
-		//Reset gone deeper counter.
 		s_timesGoneDeeper = 0;
+		//Seed rng
+		if (rng == null) {
+			rng = new Random(((int)DateTime.UtcNow.Ticks));
+		}
 
 		//Cache the state of the board.
 		m_board = board;
@@ -59,8 +55,8 @@ public class MyBot : IChessBot {
 		Move[] moves = m_board.GetLegalMoves();
 
 		//Evalulate each move and choose best one.
-		Move bestMove = moves[0];
-		int highestValue = int.MinValue;
+		Move bestMove = moves[rng.Next(moves.Length)];
+		int highestValue = Evaluate(bestMove, EVALUATION_RECURSIVE_DEPTH);
 		foreach (Move move in moves) {
 			//Evaluate the move.
 			int value = Evaluate(move, EVALUATION_RECURSIVE_DEPTH);
@@ -73,12 +69,8 @@ public class MyBot : IChessBot {
 		//DEBUG
 		if (highestValueLastTime != highestValue) {
 			highestValueLastTime = highestValue;
-			ChessChallenge.Application.ConsoleHelper.Log(
-				"HighestValue: " + highestValue.ToString() +
-				"\nTimes Checked Deeper: " + chancesPassed.ToString() +
-				"\nTimes Not Gone Deeper:" + chancesFailed.ToString() +
-				"\n===================================================="
-			);
+			ChessChallenge.Application.ConsoleHelper.Log("HighestValue: " + highestValue.ToString());
+			ChessChallenge.Application.ConsoleHelper.Log("ChancesPassedd: " + chancesPassed.ToString() + " ChancesFailed: " + chancesFailed.ToString());
 		}
 
 		//Return the move to make.
@@ -108,7 +100,7 @@ public class MyBot : IChessBot {
 		}
 
 		//Get the original board value.
-		int boardValueBeforeMove = GetValueOfBoard();
+		int boardValueBeforeMove = GetValueOfBoard(m_board);
 
 		//Make move then get the score of the state of the board afterwards.
 		m_board.MakeMove(a_move);
@@ -131,7 +123,7 @@ public class MyBot : IChessBot {
 		}
 
 		//Get the value of the whole board if the move is made.
-		int valueOfBoardIfMoveIsMade = GetValueOfBoard();
+		int valueOfBoardIfMoveIsMade = GetValueOfBoard(m_board);
 		int netMoveScore = (valueOfBoardIfMoveIsMade - boardValueBeforeMove);
 		if (netMoveScore <= 0) {
 			//If move does not capture a piece.
@@ -196,11 +188,12 @@ public class MyBot : IChessBot {
 
 			//Since we captured a piece, decide randomly if it's worth checking one level deeper.
 			bool canGoDeeper = s_timesGoneDeeper < MAX_TIMES_TO_RANDOMLY_GO_DEEPER;
-			if (RandomChanceToPass(CHANCE_TO_GO_DEEPER_ON_PIECE_CAPTURED) && canGoDeeper) {
+			if (RandomChanceToPass(25) && canGoDeeper) {
 				currentDepth++;
 				s_timesGoneDeeper++;
+				//ChessChallenge.Application.ConsoleHelper.Log("Going to check 1 level deeper!!");
 				chancesPassed++;
-			} else if (canGoDeeper) {
+			} else if(canGoDeeper) {
 				chancesFailed++;
 			}
 		}
@@ -231,7 +224,7 @@ public class MyBot : IChessBot {
 		return moveEvaluationScore;
 	}
 
-	private int GetValueOfBoard() {
+	private int GetValueOfBoard(Board a_board) {
 		PieceList[] allPieces = m_board.GetAllPieceLists();
 		int boardValue = 0;
 		foreach (PieceList pieces in allPieces) {
@@ -263,11 +256,11 @@ public class MyBot : IChessBot {
 	}
 
 	private bool RandomChanceToPass(int a_percentageChance) {
-		//Seed rng
-		if (rng == null) {
-			rng = new Random(((int)DateTime.UtcNow.Ticks));
-		}
 		int randomValue = rng.Next(100);
 		return randomValue < a_percentageChance;
+	}
+
+	public static float InverseLerp(float a, float b, float value) {
+		return (value - a) / (b - a);
 	}
 }
