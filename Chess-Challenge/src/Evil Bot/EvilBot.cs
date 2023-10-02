@@ -3,9 +3,9 @@ using System;
 using System.Numerics;
 
 namespace ChessChallenge.Example {
-	//================================
-	//AlfieBotv4.2.0(17.16-01-10-2023)
-	//================================
+	//===============================
+	//AlfieBotv4.2.0
+	//===============================
 
 	public class EvilBot : IChessBot {
 		//Value of pieces for taking and protecting.
