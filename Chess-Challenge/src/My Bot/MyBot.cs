@@ -10,7 +10,7 @@ public class MyBot : IChessBot {
 	const int EVALUATION_RECURSIVE_DEPTH = 3;//This is how many moves ahead the bot will think about.
 											 //The consts after this line are values of a move based on the state of the board after that move 
 	const int NO_ENEMY_CAPTURE_VALUE = -1000000; //When a move doesn't capture anything it is given this weight.
-	const int ENEMY_CAPTURED_MULTIPLIER = 10000;
+	const int ENEMY_CAPTURED_VALUE = 10000;
 	const int CHECKMATE_VALUE = 1000000000;
 	const int CHECK_VALUE = 100000;
 	const int DRAW_VALUE = -100000;
@@ -32,19 +32,14 @@ public class MyBot : IChessBot {
 
 	//Static variables.
 	static Random rng;
-	const int MAX_TIMES_TO_RANDOMLY_GO_DEEPER = 10;
-	static int s_timesGoneDeeper = 0;
 
 	//Debug variables.
 	int highestValueLastTime;
-	int chancesPassed;
-	int chancesFailed;
 
 	public Move Think(Board board, Timer timer) {
-		s_timesGoneDeeper = 0;
 		//Seed rng
 		if (rng == null) {
-			rng = new Random(((int)DateTime.UtcNow.Ticks));
+			rng = new Random(DateTime.Now.Millisecond);
 		}
 
 		//Cache the state of the board.
@@ -70,7 +65,6 @@ public class MyBot : IChessBot {
 		if (highestValueLastTime != highestValue) {
 			highestValueLastTime = highestValue;
 			ChessChallenge.Application.ConsoleHelper.Log("HighestValue: " + highestValue.ToString());
-			ChessChallenge.Application.ConsoleHelper.Log("ChancesPassedd: " + chancesPassed.ToString() + " ChancesFailed: " + chancesFailed.ToString());
 		}
 
 		//Return the move to make.
@@ -132,11 +126,7 @@ public class MyBot : IChessBot {
 			//Then give it more incentive to move certain pieces in that case.
 			switch (movePieceType) {
 				case PieceType.King: {
-					if (SquareIsCloseToCenter(a_move.TargetSquare)) {
-						moveEvaluationScore += -KING_MOVE_SCORE_WEIGHT;
-					} else {
-						moveEvaluationScore += +KING_MOVE_SCORE_WEIGHT;
-					}
+					moveEvaluationScore += KING_MOVE_SCORE_WEIGHT;
 					break;
 				}
 				case PieceType.Queen: {
@@ -183,18 +173,14 @@ public class MyBot : IChessBot {
 
 			}
 		} else {
-			//Mutliply the captured piece's value by the enemy captured multiplier.
-			moveEvaluationScore += ENEMY_CAPTURED_MULTIPLIER * capturedPieceValue;
 
-			//Since we captured a piece, decide randomly if it's worth checking one level deeper.
-			if (RandomChanceToPass(25) && s_timesGoneDeeper < MAX_TIMES_TO_RANDOMLY_GO_DEEPER) {
-				currentDepth++;
-				s_timesGoneDeeper++;
-				//ChessChallenge.Application.ConsoleHelper.Log("Going to check 1 level deeper!!");
-				chancesPassed++;
+			if (currentTurnIsMyBot) {
+				moveEvaluationScore += ENEMY_CAPTURED_VALUE * capturedPieceValue;
 			} else {
-				chancesFailed++;
+				//If the current turn isn't my bot I want the enemy captured value to be higher so mybot is discourage from making the move that allowed that to happen.
+				moveEvaluationScore += (ENEMY_CAPTURED_VALUE * capturedPieceValue * 10);
 			}
+
 		}
 
 		if (currentDepth > 0) {
@@ -252,14 +238,5 @@ public class MyBot : IChessBot {
 		}
 
 		return false;//Square is not an end rank.
-	}
-
-	private bool RandomChanceToPass(int a_percentageChance) {
-		int randomValue = rng.Next(100);
-		return randomValue < a_percentageChance;
-	}
-
-	public static float InverseLerp(float a, float b, float value) {
-		return (value - a) / (b - a);
 	}
 }
