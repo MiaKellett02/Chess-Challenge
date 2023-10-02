@@ -10,7 +10,7 @@ using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 
-//MiaKBotv4.0
+//MiaBotv4.0
 public class MyBot : IChessBot {
 	//Consts.
 	const int EVALUATION_RECURSIVE_DEPTH = 3;//This is how many moves ahead the bot will think about.
@@ -26,8 +26,8 @@ public class MyBot : IChessBot {
 	//lead to a capture depending on the piece being moved.
 	const int KING_MOVE_SCORE_WEIGHT = -1000;
 	const int QUEEN_MOVE_SCORE_WEIGHT = 100;
-	const int ROOK_MOVE_SCORE_WEIGHT = 100;
-	const int BISHOP_MOVE_SCORE_WEIGHT = 100;
+	const int ROOK_MOVE_SCORE_WEIGHT = 200;
+	const int BISHOP_MOVE_SCORE_WEIGHT = 200;
 	const int KNIGHT_MOVE_SCORE_WEIGHT = 100;
 	const int PAWN_MOVE_SCORE_WEIGHT = 1000;
 
@@ -65,7 +65,7 @@ public class MyBot : IChessBot {
 		int highestValue = int.MinValue;
 		foreach (Move move in moves) {
 			//Evaluate the move.
-			int value = Evaluate(move, EVALUATION_RECURSIVE_DEPTH, 0);
+			int value = Evaluate(move, EVALUATION_RECURSIVE_DEPTH);
 			if (value > highestValue) {
 				bestMove = move;
 				highestValue = value;
@@ -87,12 +87,10 @@ public class MyBot : IChessBot {
 		return bestMove;
 	}
 
-	public int Evaluate(Move a_move, int a_depthToGo, int a_currentDepth) {
+	public int Evaluate(Move a_move, int a_deepness) {
 		PieceType movePieceType = a_move.MovePieceType;
-		int movePieceValue = pieceValues[(int)movePieceType];
 		int capturedPieceValue = pieceValues[(int)m_board.GetPiece(a_move.TargetSquare).PieceType];
-		int depthRemaining = a_depthToGo - 1;
-		int currentDepth = a_currentDepth + 1;
+		int currentDepth = a_deepness - 1;
 		//Initalise return value.
 		int moveEvaluationScore = 0;
 
@@ -122,13 +120,9 @@ public class MyBot : IChessBot {
 			moveEvaluationScore += CHECKMATE_VALUE;
 		}
 
-		if (m_board.IsInCheck()) {
-			//moveEvaluationScore += CHECK_VALUE;
-			if (SquareIsGoingToBeAttackedByOpponent(a_move.TargetSquare) && movePieceType == PieceType.Queen) {
-				//We don't want to check the enemy if they're gonna take one of our high value pieces.
-				moveEvaluationScore += (-(CHECK_VALUE));
-			}
-		}
+		//if (m_board.IsInCheck()) {
+		//	moveEvaluationScore += CHECK_VALUE;
+		//}
 
 		if (m_board.IsDraw()) {
 			moveEvaluationScore += DRAW_VALUE;
@@ -163,7 +157,7 @@ public class MyBot : IChessBot {
 					moveEvaluationScore += KNIGHT_MOVE_SCORE_WEIGHT;//Initial move weight.
 
 					//Move weight to be added depedning on if the knight is close to the center.
-					int KNIGHT_MOVE_TO_CENTER_WEIGHT = KNIGHT_MOVE_SCORE_WEIGHT;
+					int KNIGHT_MOVE_TO_CENTER_WEIGHT = 1000;
 					bool isCloseToCenter = SquareIsCloseToCenter(a_move.TargetSquare);
 					if (isCloseToCenter) {
 						moveEvaluationScore += KNIGHT_MOVE_TO_CENTER_WEIGHT;
@@ -176,7 +170,7 @@ public class MyBot : IChessBot {
 					moveEvaluationScore += PAWN_MOVE_SCORE_WEIGHT;
 
 					//Move weight to be added depending on if the pawn is close to an end rank.
-					int PAWN_MOVE_TO_END_RANK_WEIGHT = PAWN_MOVE_SCORE_WEIGHT;
+					int PAWN_MOVE_TO_END_RANK_WEIGHT = 500;
 					bool pawnIsNotOnEndRank = IsSquareAnEndRank(a_move.StartSquare);
 					if (pawnIsNotOnEndRank) {
 						moveEvaluationScore += PAWN_MOVE_TO_END_RANK_WEIGHT;
@@ -191,28 +185,21 @@ public class MyBot : IChessBot {
 
 			}
 		} else {
-			//If the value of the piece we're moving is higher than the value of the piece we're capturing
-			//then we want to check if it will be captured next turn.
-			if (movePieceValue >= capturedPieceValue && SquareIsGoingToBeAttackedByOpponent(a_move.TargetSquare)) {
-				//We don't want to make the move so we want to negatively weight this capture.
-				moveEvaluationScore += (-(movePieceValue * ENEMY_CAPTURED_MULTIPLIER));
-			} else {
-				//Mutliply the captured piece's value by the enemy captured multiplier.
-				moveEvaluationScore += capturedPieceValue * ENEMY_CAPTURED_MULTIPLIER;
+			//Mutliply the captured piece's value by the enemy captured multiplier.
+			moveEvaluationScore += ENEMY_CAPTURED_MULTIPLIER * capturedPieceValue;
 
-				//Since we captured a piece, decide randomly if it's worth checking one level deeper.
-				bool canGoDeeper = s_timesGoneDeeper < MAX_TIMES_TO_RANDOMLY_GO_DEEPER;
-				if (RandomChanceToPass(CHANCE_TO_GO_DEEPER_ON_PIECE_CAPTURED) && canGoDeeper) {
-					depthRemaining++;
-					s_timesGoneDeeper++;
-					chancesPassed++;
-				} else if (canGoDeeper) {
-					chancesFailed++;
-				}
+			//Since we captured a piece, decide randomly if it's worth checking one level deeper.
+			bool canGoDeeper = s_timesGoneDeeper < MAX_TIMES_TO_RANDOMLY_GO_DEEPER;
+			if (RandomChanceToPass(CHANCE_TO_GO_DEEPER_ON_PIECE_CAPTURED) && canGoDeeper) {
+				currentDepth++;
+				s_timesGoneDeeper++;
+				chancesPassed++;
+			} else if (canGoDeeper) {
+				chancesFailed++;
 			}
 		}
 
-		if (depthRemaining > 0) {
+		if (currentDepth > 0) {
 			//Get list of next posisble moves.
 			Move[] nextMoves = m_board.GetLegalMoves();
 
@@ -220,7 +207,7 @@ public class MyBot : IChessBot {
 			//When it reaches 0 then the recursive loop will exit with the best approximate move.
 			int worstScoreForPreviousPlayer = int.MaxValue;
 			foreach (Move move in nextMoves) {
-				int moveScore = -Evaluate(move, depthRemaining, currentDepth); //Inverts the evaluation score as what's best for the next player won't be best for the current player.
+				int moveScore = -Evaluate(move, currentDepth); //Inverts the evaluation score as what's best for the next player won't be best for the current player.
 				if (moveScore < worstScoreForPreviousPlayer) {
 					worstScoreForPreviousPlayer = moveScore;
 				}
@@ -282,8 +269,11 @@ public class MyBot : IChessBot {
 		//Get list of next posisble moves.
 		Move[] nextMoves = m_board.GetLegalMoves();
 		foreach (Move move in nextMoves) {
+			//Get information about the new moves square.
+			Square newSquare = move.TargetSquare;
+
 			//Compare them with the original.
-			if (move.TargetSquare == originalSquare) {
+			if (newSquare == originalSquare) {
 				return true;
 			}
 		}
