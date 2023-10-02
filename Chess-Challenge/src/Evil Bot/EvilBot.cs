@@ -4,7 +4,7 @@ using System.Numerics;
 
 namespace ChessChallenge.Example {
 	//===============================
-	//AlfieBotv4.2.0
+	//Alfie Bot 4.2.0
 	//===============================
 
 	public class EvilBot : IChessBot {
